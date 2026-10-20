@@ -59,6 +59,25 @@ jobs:
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
+      # Retried, and a separate step from the build on purpose. All four matrix jobs
+      # share one setup-go cache key (provider/go.sum), so on the first run for a new
+      # go.sum they all miss and fetch this provider's very large dependency tree
+      # from proxy.golang.org simultaneously. On the v0.1.0 tag two of the four died
+      # on `stream error: ...; INTERNAL_ERROR; received from peer` — a transport
+      # flake, not a missing module, and one that failed the whole release because
+      # the publish job needs all four archives. Three attempts with a pause is
+      # enough: the module cache is additive, so each retry only re-fetches what the
+      # last one did not get.
+      - name: Download modules
+        working-directory: provider
+        run: |
+          for attempt in 1 2 3; do
+            if go mod download; then exit 0; fi
+            echo "go mod download failed (attempt ${attempt}); retrying" >&2
+            sleep 15
+          done
+          exit 1
+
       - name: Build provider
         env:
           GOOS: ${{ matrix.goos }}
