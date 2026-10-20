@@ -1,0 +1,6 @@
+{
+  "resource": true,
+  "name": "sbercloud",
+  "version": "0.1.0",
+  "server": "github://api.github.com/simple-container-com/pulumi-sbercloud"
+}
